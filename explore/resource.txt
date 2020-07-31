@@ -1,0 +1,99 @@
+--- login cookie required
+c_user=100016865703374;wd=1600x761;xs=9:6DsnlZKTI_IwOQ:2:1591958177:17482:10881;
+
+-- feed facebook
+https://graph.facebook.com/me/home?fields=id&limit=1&access_token=EAAAAZAw4FxQIBAElafKg4s32XtMxE5POc9hAHgggZBSmkK0cRPkZBSTpKWGhjpz7snU8XItOqqQwWS02ZBN8NjcMwe9aZAoVoHa5gYNQUPWckb3JNzUMRCobPwpzJ817f3eh0FZCpzVmvv78VyMNGZB51iMQZA5pi05dShw2GWVrAgZDZD
+
+-- reaction
+https://graph.facebook.com/1706112245_10207208047355275/reactions?type=WOW&method=post&access_token=EAAAAZAw4FxQIBAElafKg4s32XtMxE5POc9hAHgggZBSmkK0cRPkZBSTpKWGhjpz7snU8XItOqqQwWS02ZBN8NjcMwe9aZAoVoHa5gYNQUPWckb3JNzUMRCobPwpzJ817f3eh0FZCpzVmvv78VyMNGZB51iMQZA5pi05dShw2GWVrAgZDZD
+
+-- post comment
+https://graph.facebook.com/701353603770157/comments?method=POST&message=aye&access_token=EAAAAZAw4FxQIBAElafKg4s32XtMxE5POc9hAHgggZBSmkK0cRPkZBSTpKWGhjpz7snU8XItOqqQwWS02ZBN8NjcMwe9aZAoVoHa5gYNQUPWckb3JNzUMRCobPwpzJ817f3eh0FZCpzVmvv78VyMNGZB51iMQZA5pi05dShw2GWVrAgZDZD
+https://graph.facebook.com/{$postid}/comments?method=POST&attachment_url={$imagesrand}&message={$sendmessage}&access_token={$token}
+https://graph.facebook.com/{$postid}/comments?method=POST&message={$sendmessage}&access_token={$token}
+
+-- reaction select
+https://mbasic.facebook.com/reactions/picker/?is_permalink=1&ft_id=701163620455822&origin_uri=https%3A%2F%2Fmbasic.facebook.com%2FRiedayme%2Fposts%2F701163620455822&av=100016865703374
+
+- all api url
+$url = "https://graph.facebook.com/{$groupid}/feed";
+$data = "message=" . spin($read['message'])
+. "&fields=permalink_url&access_token={$read[token]}";
+$curl = file_get_contents_curl($url,$data);
+$curl = file_get_contents_curl("https://graph.facebook.com/{$post->id}/reactions?type={$read['reaction']}&method=post&access_token={$read['token']}");
+
+-- user info
+https://graph.facebook.com/me/home?access_token=EAAAAZAw4FxQIBADZB4lN5YzJFvFJhlE54dzakDkvwZAMX7ZAd9G20FgZAwIS0zxFYZAV90w65n2gZCH6Q57u7qsoQ5fXyjz8zPyRxv8F7gTlVAi4OPlMQNs8OQvzAyqZAsTuY8vEx0YhDscCNgJviEYl0HVGDX87U2hza9NkdIZCFhwZDZD
+
+-- search
+https://graph.facebook.com/search?q={$keyword}&limit={$max_process}&type=user&access_token={$token}
+https://graph.facebook.com/search?q={$keyword}&limit={$max_process}&type=page&access_token={$token}
+https://graph.facebook.com/search?q=programmer&limit=5&type=group&access_token=EAAAAZAw4FxQIBAElafKg4s32XtMxE5POc9hAHgggZBSmkK0cRPkZBSTpKWGhjpz7snU8XItOqqQwWS02ZBN8NjcMwe9aZAoVoHa5gYNQUPWckb3JNzUMRCobPwpzJ817f3eh0FZCpzVmvv78VyMNGZB51iMQZA5pi05dShw2GWVrAgZDZD
+
+-- read post
+https://graph.facebook.com/701353603770157/?fields=comments&access_token=EAAAAZAw4FxQIBAElafKg4s32XtMxE5POc9hAHgggZBSmkK0cRPkZBSTpKWGhjpz7snU8XItOqqQwWS02ZBN8NjcMwe9aZAoVoHa5gYNQUPWckb3JNzUMRCobPwpzJ817f3eh0FZCpzVmvv78VyMNGZB51iMQZA5pi05dShw2GWVrAgZDZD
+
+https://graph.facebook.com/{$postid}?fields=reactions.summary(true).limit(100)&access_token={$token}
+https://graph.facebook.com/462764390497214/?fields=name&access_token=
+
+-- friend
+https://graph.facebook.com/me/friends/{$userid}?method=post&access_token={$token}
+https://graph.facebook.com/{$people}/feed?fields=id,permalink_url,object_id&limit={$max}&access_token={$token}
+
+-- accept and reject
+https://graph.facebook.com/me/friends/{$userid}?method=POST&access_token={$token}
+https://graph.facebook.com/me/friends/{$userid}?method=DELETE&access_token={$token}
+
+-- like 
+https://graph.facebook.com/{$row->id}/likes?method=post&access_token={$token}
+
+-- group
+https://graph.facebook.com/{$groupid}/members?member={$userid}&method=POST&access_token={$token}
+https://graph.facebook.com/{$groupid}/members?member={$userid}&method=DELETE&access_token={$token}
+
+-- post delete
+https://graph.facebook.com/{$postid}/?method=DELETE&access_token={$token}
+
+-- send post to friend
+https://graph.facebook.com/{$targetid}/feed
+
+-- comment on post
+  $url = "https://graph.facebook.com/{$postid}/comments";
+  $data = "message=" . urlencode($message)
+  . "&fields=permalink_url&access_token={$token}";
+  $curl = file_get_contents_curl($url,$data);
+  
+email
+read_custom_friendlists
+read_insights
+read_audience_network_insights
+rsvp_event
+offline_access
+publish_video
+catalog_management
+pages_manage_cta
+pages_manage_instant_articles
+pages_show_list
+pages_messaging
+pages_messaging_phone_number
+pages_messaging_subscriptions
+pages_messaging_payments
+read_page_mailboxes
+ads_management
+ads_read
+business_management
+instagram_basic
+instagram_manage_comments
+instagram_manage_insights
+publish_to_groups
+groups_access_member_info
+leads_retrieval
+whatsapp_business_management
+attribution_read
+pages_read_engagement
+pages_manage_metadata
+pages_read_user_content
+pages_manage_ads
+pages_manage_posts
+pages_manage_engagement
+public_profile

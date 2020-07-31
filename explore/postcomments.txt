@@ -1,0 +1,41 @@
+-- get comment id
+https://mbasic.facebook.com/groups/371187409719053?view=permalink&id=1556345327869916&p=0
+-- p=0 ,p=10, p=20 --> page comment
+
+---
+url react comment = postid_commentid
+https://mbasic.facebook.com/reactions/picker/?is_permalink=1&ft_id=1556345327869916_1556633121174470
+---
+
+
+-- logic geet all comment reaction link
+first access the post url
+get all the id comment --> deep search if exist
+	-- check if have a reply tags  --> collect
+	-- collect the id comment in reply
+collect the id comment on parent comment
+build data
+
+[
+	{
+		"comment_id" : "1556345327869916_XXXXX",
+		"reply" : "false",
+	},
+	{
+		"comment_id" : "1556345327869916_XXXXXX",
+		"reply" : [
+			{
+			"comment_id" : "1556345327869916_XXXXXX"
+			},
+			{
+			"comment_id" : "1556345327869916_XXXXXX"
+			}			
+		],
+	}	
+]
+
+-- tag if have a more comment reply
+<div class="by bz" id="comment_replies_more_1:1556345327869916_1556626821175100"><a href="/comment/replies/?ctoken=1556345327869916_1556626821175100&amp;p=10&amp;count=18&amp;pc=4&amp;pgdir=1&amp;ft_ent_identifier=1556345327869916&amp;gfid=AQDuTjoqzZpHnklx"><span>Lihat balasan sebelumnya</span></a></div>
+
+-- tag if have a reply
+<div class="dw"><div class="dx" id="comment_replies_more_1:1556345327869916_1556695194501596"><div class="ds dy dz ea"><a class="eb" href="/comment/replies/?ctoken=1556345327869916_1556695194501596&amp;count=1&amp;curr&amp;pc=1&amp;ft_ent_identifier=1556345327869916&amp;gfid=AQAnTHzxO321cOhs&amp;refid=18&amp;__tn__=R" id="u_0_o">Dendi membalas · 1 balasan</a></div></div></div>

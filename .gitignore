@@ -1,0 +1,18 @@
+#-------------------------
+# Composer
+#-------------------------
+#vendor/
+composer.lock
+
+# Log
+scripts/data/*
+!scripts/data/keep.html
+
+scripts/log/*
+!scripts/log/keep.html
+
+scripts/download/*
+!scripts/download/keep.html
+
+scripts/temp/*
+!scripts/temp/keep.html

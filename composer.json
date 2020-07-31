@@ -1,0 +1,20 @@
+{
+    "name": "riedayme/facebookkit",
+    "description": "PHP Curl Facebook",
+    "type": "library",
+    "license": "CC-BY-4.0",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "riedayme",
+            "email": "programmer.irfaan@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Riedayme\\FacebookKit\\": "src/"
+        }
+    },
+    "require": {},
+    "require-dev": {}
+}

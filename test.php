@@ -1,0 +1,14 @@
+<?php  
+
+
+$response = "HTTP/2 302 cache-control: private, no-cache, no-store, must-revalidate expires: Sat, 01 Jan 2000 00:00:00 GMT pragma: no-cache strict-transport-security: max-age=15552000; preload location: https://mbasic.facebook.com/maiphuong.vu.52035?stype=ms&_rdr content-security-policy: default-src * data: blob: 'self';script-src *.facebook.com *.fbcdn.net *.facebook.net *.google-analytics.com *.virtualearth.net *.google.com 127.0.0.1:* *.spotilocal.com:* 'unsafe-inline' 'unsafe-eval' blob: data: 'self';style-src data: blob: 'unsafe-inline' *;connect-src *.facebook.com facebook.com *.fbcdn.net *.facebook.net *.spotilocal.com:* wss://*.facebook.com:* https://fb.scanandcleanlocal.com:* attachment.fbsbx.com ws://localhost:* blob: *.cdninstagram.com 'self' chrome-extension://boadgeojelhgndaghljhdicfkmllpafd chrome-extension://dliochdbjfkdbacpmhlcpmleaejidimm;block-all-mixed-content;upgrade-insecure-requests; x-content-type-options: nosniff content-type: text/html; charset=utf-8 x-xss-protection: 0 x-fb-debug: 4x+GuU1Q+1LSBYJG/u+fkxQd6HlyNwllup/OD0WV/jrsw0aQaICJZUQBhJSoKJNV13ZXfPoLJzrINmo3EQTbSg== content-length: 0 date: Fri, 31 Jul 2020 10:41:15 GMT alt-svc: h3-29=\":443\"; ma=3600,h3-27=\":443\"; ma=3600 HTTP/2 200 cache-control: private, no-cache, no-store, must-revalidate expires: Sat, 01 Jan 2000 00:00:00 GMT vary: Accept-Encoding x-content-type-options: nosniff pragma: no-cache strict-transport-security: max-age=15552000; preload content-encoding: gzip content-security-policy: default-src * data: blob: 'self';script-src *.facebook.com *.fbcdn.net *.facebook.net *.google-analytics.com *.virtualearth.net *.google.com 127.0.0.1:* *.spotilocal.com:* 'unsafe-inline' 'unsafe-eval' blob: data: 'self';style-src data: blob: 'unsafe-inline' *;connect-src *.facebook.com facebook.com *.fbcdn.net *.facebook.net *.spotilocal.com:* wss://*.facebook.com:* https://fb.scanandcleanlocal.com:* attachment.fbsbx.com ws://localhost:* blob: *.cdninstagram.com 'self' chrome-extension://boadgeojelhgndaghljhdicfkmllpafd chrome-extension://dliochdbjfkdbacpmhlcpmleaejidimm;block-all-mixed-content;upgrade-insecure-requests; content-type: text/html; charset=utf-8 x-frame-options: DENY x-xss-protection: 0 x-fb-debug: JQ0TcDwUtRZunhe7pxema43WAdRzcRxArSVSypqXlpSVNYkZC4Xt0R3h0jFBtlfdI5dcli/V0LfJPQ7gqwb2Kg== date: Fri, 31 Jul 2020 10:41:15 GMT alt-svc: h3-29=\":443\"; ma=3600,h3-27=\":443\"; ma=3600";
+
+
+if (strstr($response, '200 OK') AND strstr($response, '302 Found') OR strstr($response, 'HTTP/2 200') AND strstr($response, 'HTTP/2 302')) 
+{
+
+	echo "aaaa";
+}else{ 
+
+	echo "bbbb";
+}
