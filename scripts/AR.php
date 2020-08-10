@@ -4,118 +4,110 @@
 * Last Update 13 Juni 2020
 * Author : Faanteyki
 */
-require "../vendor/autoload.php";
+require "AUTH.php";
 
-use Riedayme\FacebookKit\FacebookAuth;
-use Riedayme\FacebookKit\FacebookCookie;
-use Riedayme\FacebookKit\FacebookChecker;
-
-use Riedayme\FacebookKit\FacebookGroupList;
+use Riedayme\FacebookKit\FacebookUserGroups;
 use Riedayme\FacebookKit\FacebookFeedGroup;
-
 use Riedayme\FacebookKit\FacebookFeedTimeLine;
 
-use Riedayme\FacebookKit\FacebookPostComments;
-use Riedayme\FacebookKit\FacebookPostReaction;
+use Riedayme\FacebookKit\FacebookPostCommentsRead;
+use Riedayme\FacebookKit\FacebookPostCommentsReplyRead;
 
-Class InputHelper
+use Riedayme\FacebookKit\FacebookPostReactionSend;
+
+Class FacebookAutoReaction
 {
 
-	public function GetInputChoiceLogin($data = false) 
+	public $logindata; 
+	public $required_access;
+
+	public $targetreaction;
+	public $targetreactiontype;
+	public $react;
+
+	public $groupid;
+
+	public $delay_bot = 10;
+	public $delay_bot_default = 15;
+	public $delay_bot_count = 0;	
+
+	public $count_delay;
+
+	public $fileconfig = "./data/ar.json";	
+	public $filelog = "./log/ar-%s.json";		
+
+	public function GetInputChoiceTargetReaction() 
 	{
 
-		if ($data) return $data;
+		echo "[?] Target Reaction : ".PHP_EOL;
+		echo "[1] Feed Timeline".PHP_EOL;
+		echo "[2] Feed Group".PHP_EOL;
 
-		echo "Pilihan Login Menggunakan : ".PHP_EOL;
-		echo "[c] Masuk menggunakan cookie".PHP_EOL;
-		echo "[p] Masuk menggunakan username dan password".PHP_EOL;
+		echo "[?] Pilihan anda : ";
 
 		$input = trim(fgets(STDIN));
 
-		if (!in_array(strtolower($input),['c','p'])) 
+		if (!in_array(strtolower($input),['1','2'])) 
 		{
 			die("Pilihan tidak diketahui".PHP_EOL);
 		}
 
 		return (!$input) ? die('Pilihan masih Kosong'.PHP_EOL) : $input;
-	}	
-
-	public function GetInputCookie($data = false) {
-
-		if ($data) return $data;
-
-		$CheckPreviousCookie = FacebookAutoReaction::CheckPreviousCookie();
-
-		if ($CheckPreviousCookie) 
-		{
-			echo "Anda Memiliki Cookie yang tersimpan pilih angkanya dan gunakan kembali : ".PHP_EOL;
-			foreach ($CheckPreviousCookie as $key => $cookie) 
-			{
-				echo "[{$key}]".$cookie['username'].PHP_EOL;
-			}
-			echo "[x] Masuk menggunakan cookie baru".PHP_EOL;
-
-			echo "Pilihan Anda : ".PHP_EOL;
-
-			$input = strtolower(trim(fgets(STDIN)));			
-
-			if ($input != 'x') 
-			{
-
-				if (strval($input) !== strval(intval($input))) 
-				{
-					die("Salah memasukan format, pastikan hanya angka".PHP_EOL);
-				}
-
-				return $input;
-			}
-		}		
-
-		echo "Masukan Cookie : ".PHP_EOL;
-
-		$input = trim(fgets(STDIN));
-
-		return (!$input) ? die('Cookie Masih Kosong'.PHP_EOL) : $input;
-	}		
-
-	public function GetInputUsername($data = false) 
-	{
-
-		if ($data) return $data;
-
-		echo "Masukan Username : ".PHP_EOL;
-
-		$input = trim(fgets(STDIN));
-
-		return (!$input) ? die('Username Masih Kosong'.PHP_EOL) : $input;
 	}
 
-	public function GetInputPassword($data = false) 
-	{
+	public function GetInputGroupName() {
 
-		if ($data) return $data;
-
-		echo "Masukan Password: ".PHP_EOL;
-
-		return trim(fgets(STDIN));
-	}	
-
-	public function GetInputLimit($data = false) 
-	{
-
-		if ($data) return $data;
-
-		echo "Masukan Limit Feed (angka): ".PHP_EOL;
+		echo "[?] Cari Nama Group (karakter): ";
 
 		$input = trim(fgets(STDIN));
 
-		if (strval($input) !== strval(intval($input))) 
-		{
+		return (!$input) ? die('Nama Group Masih Kosong'.PHP_EOL) : $input;
+	}	
+
+	public function GetInputChoiceGroup() {
+
+		echo "[?] Masukan Group yang dipilih (angka): ";
+
+		$input = trim(fgets(STDIN));
+
+		if (strval($input) !== strval(intval($input))) {
 			die("Salah memasukan format, pastikan hanya angka".PHP_EOL);
 		}
 
-		return (!$input) ? die('Limit Feed Masih Kosong'.PHP_EOL) : $input;
-	}
+		return $input;
+	}	
+
+	public function ChoiceGroup()
+	{
+		echo "[•] Mendapatkan List Group".PHP_EOL;
+
+		$Group = new FacebookUserGroups();
+		$Group->Required($this->required_access);
+
+		$results =$Group->Process();
+
+		echo "[•] Ditemukan ".count($results['response'])." Group".PHP_EOL;
+
+		$search = self::GetInputGroupName();
+
+		$search_results = array();
+		foreach ($results['response'] as $key => $group) {
+			if (preg_match("/{$search}/i", $group['name'])) {
+				$search_results[] = "[{$key}] ".$group['name'].PHP_EOL;
+			}
+		}
+
+		if (!$search_results) {
+			echo "[•] Group tidak ditemukan, coba kembali.".PHP_EOL;
+			return self::ChoiceGroup();
+		}else{
+			echo "[•] Daftar Group yang ditemukan : ".PHP_EOL;			
+			echo implode('', $search_results);
+		}
+
+		$choice = self::GetInputChoiceGroup();
+		return $results['response'][$choice]['id'];
+	}	
 
 	public function GetInputReact($data = false) 
 	{
@@ -126,9 +118,9 @@ Class InputHelper
 			return $reactlist[array_rand($reactlist)];
 		}
 
-		if ($data) return $data;
+		echo "[?] Daftar React yang ada [LIKE, LOVE, CARE, HAHA, WOW, SAD, ANGRY, RANDOM]".PHP_EOL;
 
-		echo "Masukan Reaksi yang dikirim : [LIKE, LOVE, CARE, HAHA, WOW, SAD, ANGRY, RANDOM]".PHP_EOL;
+		echo "[?] Pilihan anda : ";
 
 		$input = strtoupper(trim(fgets(STDIN)));
 
@@ -139,16 +131,13 @@ Class InputHelper
 			die("Reaksi Pilihan tidak valid".PHP_EOL);
 		}
 
-
 		return (!$input) ? die('Reaction Masih Kosong'.PHP_EOL) : $input;
 	}
 
-	public function GetInputReactComment($data = false) 
+	public function GetInputReactComment() 
 	{
 
-		if ($data) return $data;
-
-		echo "React Comment Juga ? (y/n): ".PHP_EOL;
+		echo "[?] React Comment Juga ? (y/n): ";
 
 		$input = trim(fgets(STDIN));
 
@@ -158,142 +147,18 @@ Class InputHelper
 		}
 
 		return (!$input) ? die('Pilihan masih Kosong'.PHP_EOL) : $input;
-	}
-
-	public function GetInputChoiceTargetReaction($data = false) 
-	{
-
-		if ($data) return $data;
-
-		echo "Pilihan Jenis Target Feed : ".PHP_EOL;
-		echo "[1] Feed Timeline".PHP_EOL;
-		echo "[2] Feed Group".PHP_EOL;
-
-		$input = trim(fgets(STDIN));
-
-		if (!in_array(strtolower($input),['1','2'])) 
-		{
-			die("Pilihan tidak diketahui".PHP_EOL);
-		}
-
-		return (!$input) ? die('Pilihan masih Kosong'.PHP_EOL) : $input;
-	}		
-
-	public function GetInputGroupName($data = false) {
-
-		if ($data) return $data;
-
-		echo "Cari Nama Group (karakter): ".PHP_EOL;
-
-		$input = trim(fgets(STDIN));
-
-		return (!$input) ? die('Nama Group Masih Kosong'.PHP_EOL) : $input;
 	}	
 
-	public function GetInputChoiceGroup($data = false) {
+	public function SaveData($data){
 
-		if ($data) return $data;
+		$filename = $this->fileconfig;
 
-		echo "Masukan Group yang dipilih (angka): ".PHP_EOL;
-
-		$input = trim(fgets(STDIN));
-
-		if (strval($input) !== strval(intval($input))) {
-			die("Salah memasukan format, pastikan hanya angka".PHP_EOL);
-		}
-
-		return $input;
-	}				
-}
-
-Class FacebookAutoReaction
-{
-
-	public $login_data;
-	public $cookie;
-	public $access_token;	
-	public $username;
-
-	public $targetreaction;
-	public $targetreactionname;
-	public $limit;
-	public $react;
-
-	public $groupid;
-
-	public function Auth($data,$ReAuth = false) 
-	{
-
-		if ($data['type'] == 'previous_cookie') 
-		{
-			$results = self::ReadPreviousCookie($data['cookie']);
-
-			echo "[INFO] Check Live Cookie".PHP_EOL;
-
-			$check_cookie = FacebookChecker::CheckLiveCookie($results['cookie']);
-			if (!$check_cookie) die("[ERROR] cookie tidak bisa digunakan".PHP_EOL);
-
-			if ($ReAuth) {
-
-				echo "[INFO] Reauth Cookie".PHP_EOL;
-
-				$auth = new FacebookAuth();
-				$results =$auth->AuthUsingCookie($results['cookie']);
-
-				echo "[INFO] Menyimpan Data Login".PHP_EOL;
-
-				self::SaveCookie($results);
-			}
-		}elseif ($data['type'] == 'new_cookie') {
-			echo "[INFO] Validate Cookie".PHP_EOL;
-
-			$auth = new FacebookAuth();
-			$results =$auth->AuthUsingCookie($data['cookie']);
-
-			echo "[INFO] Menyimpan Data Login".PHP_EOL;
-
-			self::SaveCookie($results);
-		}elseif ($data['type'] == 'login') {
-			echo "[INFO] Masuk menggunakan username dan password".PHP_EOL;
-
-			$auth = new FacebookAuth();
-			$results =$auth->AuthLoginByMobile($data['username'],$data['password']);
-
-			echo "[INFO] Menyimpan Data Login".PHP_EOL;
-
-			self::SaveCookie($results);
-		}
-
-		$this->login_data = $data;
-		$this->username = $results['username'];
-		$this->cookie = $results['cookie'];
-		$this->access_token = $results['access_token'];
-		if (!$ReAuth) {
-			$this->targetreaction = InputHelper::GetInputChoiceTargetReaction();
-			if ($this->targetreaction == '2') {
-				$this->targetreactionname = 'Group';
-				$this->groupid = self::ChoiceGroup();
-			}else{
-				$this->targetreactionname = 'Timeline';
-			}
-			$this->limit = InputHelper::GetInputLimit();
-			$this->react = InputHelper::GetInputReact();
-		}
-	}
-
-	public function SaveCookie($data){
-
-		$filename = 'log/log-cookie.json';
-
-		if (file_exists($filename)) 
-		{
+		if (file_exists($filename)) {
 			$read = file_get_contents($filename);
 			$read = json_decode($read,true);
 			$dataexist = false;
-			foreach ($read as $key => $logdata) 
-			{
-				if ($logdata['userid'] == $data['userid']) 
-				{
+			foreach ($read as $key => $logdata) {
+				if ($logdata['userid'] == $data['userid']) {
 					$inputdata[] = $data;
 					$dataexist = true;
 				}else{
@@ -301,8 +166,7 @@ Class FacebookAutoReaction
 				}
 			}
 
-			if (!$dataexist) 
-			{
+			if (!$dataexist) {
 				$inputdata[] = $data;
 			}
 		}else{
@@ -312,189 +176,235 @@ Class FacebookAutoReaction
 		return file_put_contents($filename, json_encode($inputdata,JSON_PRETTY_PRINT));
 	}
 
-	public function CheckPreviousCookie()
+	public function ReadSavedData($userid)
 	{
 
-		$filename = 'log/log-cookie.json';
-		if (file_exists($filename)) 
-		{
+		$filename = $this->fileconfig;
+
+		if (file_exists($filename)) {
+
+			$inputdata = false;
 			$read = file_get_contents($filename);
 			$read = json_decode($read,TRUE);
-			foreach ($read as $key => $logdata) 
-			{
-				$inputdata[] = $logdata;
-			}
-
-			return $inputdata;
-		}else{
-			return false;
-		}
-	}
-
-	public function ReadPreviousCookie($data)
-	{
-
-		$filename = 'log/log-cookie.json';
-		if (file_exists($filename)) 
-		{
-			$read = file_get_contents($filename);
-			$read = json_decode($read,TRUE);
-			foreach ($read as $key => $logdata) 
-			{
-				if ($key == $data) 
-				{
+			foreach ($read as $key => $logdata) {
+				if ($logdata['userid'] == $userid) {
 					$inputdata = $logdata;
-					break;
 				}
 			}
 
 			return $inputdata;
 		}else{
-			die("file tidak ditemukan");
+			return false;
 		}
 	}	
 
 	public function GetFeed()
 	{
 
-		echo "[INFO] Membaca Feed {$this->targetreactionname}".PHP_EOL;
+		echo "[•] Membaca Feed {$this->targetreactiontype}".PHP_EOL;
 
 		if ($this->targetreaction == '2') 
 		{
 			$Feed = new FacebookFeedGroup();
-			$Feed->SetAccessToken($this->access_token);
+			$Feed->Required($this->required_access);
 
-			$results =$Feed->GetFeedGroupByToken([
-				'groupid' => $this->groupid,
-				'limit' => $this->limit
-				]);
+			$cursor = false;
+			$count = 0;
+			$limit = 1;
+			$all_data = array();
+			do {
+
+				$post = $Feed->Process($this->groupid,$cursor);
+
+				if (!$post['status']) {
+					break;
+					return false;
+				}
+
+				$data = $Feed->Extract($post);
+
+				$all_data = array_merge($all_data,$data);
+
+				if ($post['cursor'] !== null) {
+					$cursor = $post['cursor'];
+				}else{
+					$cursor = false;
+				}
+
+				$count = $count+1;
+			} while ($cursor !== false AND $count < $limit);
 		}
 		elseif ($this->targetreaction == '1') 
 		{
 			$Feed = new FacebookFeedTimeLine();
-			$Feed->SetAccessToken($this->access_token);		
-			$results =$Feed->GetTimeLineByToken($this->limit);
+			$Feed->Required($this->required_access);
+
+			$cursor = false;
+			$count = 0;
+			$limit = 1;
+			$all_data = array();
+			do {
+
+				$post = $Feed->Process($cursor);
+
+				if (!$post['status']) {
+					break;
+					return false;
+				}
+
+				$data = $Feed->Extract($post);
+
+				$all_data = array_merge($all_data,$data);
+
+				if ($post['cursor'] !== null) {
+					$cursor = $post['cursor'];
+				}else{
+					$cursor = false;
+				}
+
+				$count = $count+1;
+			} while ($cursor !== false AND $count < $limit);
 		}
 
-		/* check if feed not loaded */
-		if (!$results) 
-		{
-			echo "[ERROR] Mendapatkan Feed".PHP_EOL;
+		echo "[•] Sukses Mendapatkan Feed".PHP_EOL;
 
-			self::ReAuth();
-			return false;
-		}
-
-		echo "[INFO] Sukses Mendapatkan Feed".PHP_EOL;
-
-		return $results;
+		return $all_data;
 	}
 
 	public function GetComment($postid)
 	{
-		$data = [
-		'postid' => $postid,
-		'limit' => 10,
-		];
-		$GetComment = new FacebookPostComments();
-		$GetComment->SetCookie($this->cookie);
-		$GetComment->GetComment($data);
-		$results = $GetComment->ResultsIDS();
+		$read = new FacebookPostCommentsRead();
+		$read->Required($this->required_access);
 
-		if (!$results) 
-		{
+		$deep = false;
+		$count = 0;
+		$limit = 1;
+		$all_data = array();
+		do {
+
+			$post = $read->Process($postid,$deep);
+
+			if (!$post['status']) {			
+				break;
+				return false;
+			}
+
+			$data = $read->Extract($post);
+
+			$all_data = array_merge($all_data,$data);
+
+			if ($post['deep'] !== null) {
+				$deep = $post['deep'];
+			}else{
+				$deep = false;
+			}
+
+			$count = $count+1;
+		} while ($deep !== false AND $count < $limit);
+
+		/* read reply comment */
+		$readreply = new FacebookPostCommentsReplyRead();
+		$readreply->Required($this->required_access);
+
+		$comment_data = array();
+		foreach ($all_data as $comment) {
+
+			if ($comment['reply_url']) {
+
+				$deep = false;
+				$count = 0;
+				$limit = 1;
+				do {
+
+					$post = $readreply->Process($comment['reply_url'],$deep);
+
+					if (!$post['status']) {
+						break;
+						return false;
+					}
+
+					$data = $readreply->Extract($post);
+
+					$comment_data[] = [
+						'userid' => $comment['userid'],					
+						'username' => $comment['username'],
+						'commentid' => $comment['commentid'],
+						'reply' => $data
+					];
+
+					if ($post['deep'] !== null) {
+						$deep = $post['deep'];
+					}else{
+						$deep = false;
+					}
+
+					$count = $count+1;
+				} while ($deep !== false AND $count < $limit);
+
+			}else{
+				$comment_data[] = [
+					'userid' => $comment['userid'],					
+					'username' => $comment['username'],
+					'commentid' => $comment['commentid'],
+					'reply' => false
+				];
+			}
+
+		}		
+
+		if (count($comment_data) < 1) {
 			return false;
 		}
 
-		return $results;
+		return $comment_data;
 	}
 
-	public function ReactPost($datapost,$is_comment = false)
+	public function ProcessReact($datapost,$is_comment = false)
 	{
 
 		$posttype = ($is_comment == true) ? "Komentar" : "Post";
 
-		$datapost['url'] = "https://www.facebook.com/{$datapost['postid']}";
+		$posturl = "https://www.facebook.com/{$datapost['postid']}";
 
 		/* sync react post with log file */
 		$sync = self::SyncReact($datapost['postid']);
 		if ($sync) 
 		{
-			echo "[SKIP] React {$posttype} {$datapost['url']} Sudah Diproses.".PHP_EOL;
+			echo "[SKIP] React {$posttype} {$posturl} Sudah Diproses.".PHP_EOL;
 			return false;
 		}
 
-		$type = ($this->react == 'RANDOM') ? InputHelper::GetInputReact('RANDOM') : $this->react;
+		$type = ($this->react == 'RANDOM') ? self::GetInputReact('RANDOM') : $this->react;
 
-		echo "[INFO] Proses React {$type} {$datapost['postid']}".PHP_EOL;
+		echo "[•] Proses React {$type} {$datapost['postid']}".PHP_EOL;
 
-		$react = new FacebookPostReaction();
-		$react->SetCookie($this->cookie);
-		$process = $react->ReactPostByScraping([
-			'postid' => $datapost['postid'], 
-			'type' => $type
-			]);
+		$send = new FacebookPostReactionSend();
+		$send->Required($this->required_access);
 
-		if ($process != false) 
+		$results =$send->Process($datapost['postid'],$type);
+
+		if ($results['status'] != false) 
 		{
+			echo "[".date('d-m-Y H:i:s')."] Berhasil React {$posttype} {$posturl}".PHP_EOL;
+			self::SaveLog($datapost['postid']);
+			return true;
+		}else{
 
-			if ($process == 'URL_NOTFOUND') 
+			if ($results['response'] == 'fail_get_url') 
 			{
-				echo "[FAILED] URL React pada {$posttype} {$datapost['url']} tidak ditemukan.".PHP_EOL;	
-			}elseif ($process == 'UNREACT') 
+				echo "[!] Gagal Mendapatkan URL React {$posttype} Pada url {$posturl}".PHP_EOL;
+
+			}elseif ($results['response'] == 'unreact') 
 			{
-				echo "[SKIP] React {$posttype} {$datapost['url']} Sudah Diproses.".PHP_EOL;	
+				echo "[SKIP] React {$posttype} {$posturl} Sudah Diproses.".PHP_EOL;	
 				self::SaveLog($datapost['postid']);	
 			}else{
-				echo "[SUCCESS] React {$posttype} {$datapost['url']}".PHP_EOL;
-				self::SaveLog($datapost['postid']);
-				return true;
+				echo "[!] Gagal React {$posttype} Pada url {$posturl}".PHP_EOL;
 			}
-		}else{
-			echo "[FAILED] React {$posttype} {$datapost['url']}, Kesalahan pada kode.".PHP_EOL;
 		}
 
 		return false;
-	}
-
-	public function ChoiceGroup()
-	{
-		echo "[INFO] Mendapatkan List Group".PHP_EOL;
-
-		$Group = new FacebookGroupList();
-		$Group->SetCookie($this->cookie);
-
-		$results =$Group->GetGroupListByScraping();
-
-		echo "[INFO] Ditemukan ".count($results)." Group".PHP_EOL;
-
-		$search = InputHelper::GetInputGroupName();
-
-		$search_results = array();
-		foreach ($results as $key => $group) {
-			if (preg_match("/{$search}/i", $group['name'])) {
-				$search_results[] = "[{$key}]".$group['name'].PHP_EOL;
-			}
-		}
-
-		if (!$search_results) {
-			echo "[INFO] Group tidak ditemukan, coba kembali.".PHP_EOL;
-			return self::ChoiceGroup();
-		}else{
-			echo "[INFO] Daftar Group yang ditemukan : ".PHP_EOL;			
-			echo implode('', $search_results);
-		}
-
-		$choice = InputHelper::GetInputChoiceGroup();
-		return $results[$choice]['id'];
 	}	
-
-	public function ReAuth()
-	{
-
-		echo "[INFO] Mencoba login kembali".PHP_EOL;
-		self::Auth($this->login_data,true);
-	}
 
 	public function SyncReact($postid)
 	{
@@ -512,163 +422,209 @@ Class FacebookAutoReaction
 	public function ReadLog()
 	{		
 
-		$logfilename = "log/{$this->targetreactionname}{$this->groupid}-{$this->username}";
-		$log_url = array();
+		$logfilename = sprintf($this->filelog,"{$this->targetreactiontype}{$this->groupid}-{$this->logindata['username']}");
+		$log_id = array();
 		if (file_exists($logfilename)) 
 		{
-			$log_url = file_get_contents($logfilename);
-			$log_url  = explode(PHP_EOL, $log_url);
+			$log_id = file_get_contents($logfilename);
+			$log_id  = explode(PHP_EOL, $log_id);
 		}
 
-		return $log_url;
+		return $log_id;
 	}
 
-	public function SaveLog($datapost)
+	public function SaveLog($data)
 	{
-		return file_put_contents("log/{$this->targetreactionname}{$this->groupid}-{$this->username}", $datapost.PHP_EOL, FILE_APPEND);
-	}
-}
+		return file_put_contents(sprintf($this->filelog,"{$this->targetreactiontype}{$this->groupid}-{$this->logindata['username']}"), $data.PHP_EOL, FILE_APPEND);
+	}		
 
-Class Worker
-{
+	public function DelayBot()
+	{
+
+		/* reset sleep value to default */
+		if ($this->delay_bot_count >= 5) {
+			$this->delay_bot = $this->delay_bot_default;
+			$this->delay_bot_count = 0;
+		}	
+
+		echo "[•] Delay {$this->delay_bot}".PHP_EOL;
+		sleep($this->delay_bot);
+		$this->count_delay += $this->delay_bot;
+		$this->delay_bot = $this->delay_bot+5;
+		$this->delay_bot_count++;
+	}	
+
 	public function Run()
 	{
 
-		echo " --- Facebook Auto Reaction v1.3 ---".PHP_EOL;
+		echo "Facebook Auto Reaction".PHP_EOL;
 
-		$login_choice = InputHelper::GetInputChoiceLogin();
+		$login = new Auth();
 
-		if ($login_choice == 'c') {
-			$data['cookie'] = InputHelper::GetInputCookie();
-			if (strval($data['cookie']) !== strval(intval($data['cookie']))) 
+		$this->logindata = $login->Run();
+		$this->required_access = [
+			'cookie' => $this->logindata['cookie'],
+			'access_token' => $this->logindata['access_token'],
+			'useragent' => false, //  false for auto genereate
+			'proxy' => false // false for not use proxy 
+		];
+
+		if ($check = self::ReadSavedData($this->logindata['userid'])){
+			echo "[?] Anda Memiliki konfigurasi yang tersimpan, gunakan kembali (y/n) : ";
+
+			$reuse = trim(fgets(STDIN));
+
+			if (!in_array(strtolower($reuse),['y','n'])) 
 			{
-				$data['type'] = 'new_cookie';
+				die("Pilihan tidak diketahui");
+			}
+
+			if ($reuse == 'y') {
+
+				$this->targetreaction = $check['targetreaction'];
+				if ($this->targetreaction == '2') {
+					$this->targetreactiontype = 'Group';
+					$this->groupid = $check['groupid'];
+				}else{
+					$this->targetreactiontype = 'Timeline';
+				}
+				$this->react = $check['react'];
+				$react_comment =$check['react_comment'];
+
 			}else{
-				$data['type'] = 'previous_cookie';
+
+				$this->targetreaction = self::GetInputChoiceTargetReaction();
+				if ($this->targetreaction == '2') {
+					$this->targetreactiontype = 'Group';
+					$this->groupid = self::ChoiceGroup();
+				}else{
+					$this->targetreactiontype = 'Timeline';
+				}
+				$this->react = self::GetInputReact();
+				$react_comment = self::GetInputReactComment();
+
+				$save_config = [
+					'userid' => $this->logindata['userid'],
+					'username' => $this->logindata['username'],
+					'targetreaction' => $this->targetreaction,
+					'react' => $this->react,					
+					'react_comment' => $react_comment
+				];
+
+				if ($this->targetreaction == '2') {
+					$save_config = array_merge($save_config,['groupid' => $this->groupid]);
+				}
+
+				/* save new config data */
+				self::SaveData($save_config);
 			}
+		}else{
+
+			$this->targetreaction = self::GetInputChoiceTargetReaction();
+			if ($this->targetreaction == '2') {
+				$this->targetreactiontype = 'Group';
+				$this->groupid = self::ChoiceGroup();
+			}else{
+				$this->targetreactiontype = 'Timeline';
+			}
+			$this->react = self::GetInputReact();
+			$react_comment = self::GetInputReactComment();
+
+			$save_config = [
+				'userid' => $this->logindata['userid'],
+				'username' => $this->logindata['username'],
+				'targetreaction' => $this->targetreaction,
+				'react' => $this->react,					
+				'react_comment' => $react_comment
+			];
+
+			if ($this->targetreaction == '2') {
+				$save_config = array_merge($save_config,['groupid' => $this->groupid]);
+			}
+
+			/* save new config data */
+			self::SaveData($save_config);
 		}
 
-
-		if ($login_choice == 'p') {
-			$data['type'] = 'login';
-			$data['username'] = InputHelper::GetInputUsername();
-
-			if (!is_array($data['username'])) 
-			{
-				$data['password'] = InputHelper::GetInputPassword();
-			}
-		}
-
-		$delay_default = 10;
-		$delay = 10;
-		$delayfeed_default = 10;
-		$delayfeed = 10;
-
-		/* Call Class */
-		$Working = new FacebookAutoReaction();
-		$Working->Auth($data);
-
-		$react_comment = InputHelper::GetInputReactComment();
-
-		$nofeed = 0;
-		$ReactPost = 0;
 		while (true) 
 		{
 
-			/* when nofeed 5 reset sleep value to default */
-			if ($nofeed >= 5) 
-			{
-				$delayfeed = $delayfeed_default;
-				$nofeed = 0;
-			}
+			$FeedList = self::GetFeed();
 
-			$FeedList = $Working->GetFeed();
-
-			if (empty($FeedList)) 
-			{
-				echo "[INFO] Tidak ditemukan Post, Coba lagi setelah {$delayfeed} detik".PHP_EOL;
-				sleep($delayfeed);
-
-				$delayfeed = $delayfeed*rand(2,3);
-				$nofeed++;
-
-				continue;
-			}
-
-			$temp_post_process = 0;
-			foreach ($FeedList as $key => $post) 
+			$no_activity = true;
+			foreach ($FeedList as $post) 
 			{
 
-				/* when ReactPost 5 reset sleep value to default */
-				if ($ReactPost >= 5) 
-				{
-					$delay = $delay_default;
-					$ReactPost = 0;
-				}	
-
-				$process_post = $Working->ReactPost($post);
+				$process_post = self::ProcessReact($post);
 
 				if ($process_post) 
 				{
-					echo "[INFO] Delay {$delay}".PHP_EOL;
-					sleep($delay);
-					$delay = $delay+5;
-					$ReactPost++;
-					$temp_post_process++;
+					/* delay bot */
+					self::DelayBot();
+
+					$no_activity = false; /* activty detected */
 				}
 
 				if ($react_comment == 'y') 
 				{
-					echo "[INFO] Membaca Komentar Post {$post['postid']}".PHP_EOL;
+					echo "[•] Membaca Komentar pada post {$post['postid']}".PHP_EOL;
 
-					$comment = $Working->GetComment($post['postid']);
-					if (!$comment) 
+					$comments = self::GetComment($post['postid']);
+					if (!$comments) 
 					{
-						echo "[INFO] Tidak ada komentar pada post {$post['postid']}".PHP_EOL;
+						echo "[•] Tidak ada komentar pada post {$post['postid']}".PHP_EOL;
 						continue;
 					}
 
-					foreach ($comment as $commentid) 
+					foreach ($comments as $comment) 
 					{
 
-						/* when ReactPost 5 reset sleep value to default */
-						if ($ReactPost >= 5) 
-						{
-							$delay = $delay_default;
-							$ReactPost = 0;
-						}	
-
-						$commentpost['postid'] = $commentid;
-						$process_comment = $Working->ReactPost($commentpost,true);
+						$commentpost['postid'] = $comment['commentid'];
+						$process_comment = self::ProcessReact($commentpost,true);
 
 						if ($process_comment) 
 						{
-							echo "[INFO] Delay {$delay}".PHP_EOL;
-							sleep($delay);
+							/* delay bot */
+							self::DelayBot();
 
-							$delay = $delay+5;
-							$ReactPost++;
+							$no_activity = false; /* activty detected */
+						}
+
+						/* process react reply comment if exist */
+						if ($comment['reply']) {
+							
+							foreach ($comment['reply'] as $commentreply) {
+
+								$commentreply['postid'] = $commentreply['commentid'];
+								$process_comment = self::ProcessReact($commentreply,true);
+
+								if ($process_comment) 
+								{
+									/* delay bot */
+									self::DelayBot();
+
+									$no_activity = false; /* activty detected */
+								}
+							}
+
 						}
 
 					}
 				}
 			}
 
-			if ($temp_post_process < 1) 
+			if ($no_activity) 
 			{
-				echo "[INFO] Tidak ditemukan Post, Coba lagi setelah {$delayfeed} detik".PHP_EOL;
-				sleep($delayfeed);
-
-				$delayfeed = $delayfeed*rand(2,3);
-				$nofeed++;
-
+				echo "[•] Tidak ditemukan Post, Coba lagi setelah {1000} detik".PHP_EOL;
+				sleep(1000);
 				continue;
 			}
 
 		}		
 
-	}
+	}	
 }
 
-Worker::Run();
+$x = new FacebookAutoReaction();
+$x->Run();
 // use at you own risk
